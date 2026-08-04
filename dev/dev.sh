@@ -12,10 +12,25 @@ SMP=${SMP:-2}
 NUM=${NUM:-5}
 
 mkdir -p "$VM_DIR"
+mkdir -p "$(dirname "$BASE_IMG")"
 
 if [ ! -f "$BASE_IMG" ]; then
-  echo "Base image $BASE_IMG not found. Place an Ubuntu QCOW2 at that path or set BASE_IMG."
-  exit 1
+  echo "Base image $BASE_IMG not found. Using dev/discover-ubuntu-qcow2.sh to obtain image..."
+  DISCOVER_SCRIPT="$(dirname "$0")/discover-ubuntu-qcow2.sh"
+  if [ ! -x "$DISCOVER_SCRIPT" ]; then
+    if [ -f "$DISCOVER_SCRIPT" ]; then
+      chmod +x "$DISCOVER_SCRIPT" || true
+    else
+      echo "discover script not found at $DISCOVER_SCRIPT. Please provide $BASE_IMG manually."
+      exit 1
+    fi
+  fi
+
+  # Use the discover script to fetch the image and verify checksum.
+  "$DISCOVER_SCRIPT" --output "$BASE_IMG" || {
+    echo "discover script failed; please provide $BASE_IMG manually or run the discover script with --print-only to inspect.";
+    exit 1
+  }
 fi
 
 for i in $(seq 1 $NUM); do
